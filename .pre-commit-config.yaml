@@ -4,4 +4,4 @@ repos:
     hooks:
     - id: gitleaks
       language: system
-      entry: gitleaks protect --staged
+      entry: gitleaks detect --exit-code=1 --verbose --staged .
