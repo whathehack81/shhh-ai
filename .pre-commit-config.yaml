@@ -3,5 +3,5 @@ repos:
     rev: v8.18.4
     hooks:
     - id: gitleaks
-      args: ["--verbose", "--exit-code", "1"]
-      files: \S
+      language: system
+      entry: gitleaks protect --staged
