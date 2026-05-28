@@ -159,18 +159,29 @@ def scan_directory(
     target: str,
     min_entropy: float = 3.5,
     max_file_size_kb: int = 512,
+    excludes: list[str] | None = None,
 ) -> list[Finding]:
     """Recursively scan a directory for secrets."""
     all_findings = []
     target_path = Path(target)
+    excludes = excludes or []
 
     if target_path.is_file():
+        target_str = str(target_path)
+        if any(fragment in target_str for fragment in excludes):
+            return []
         return scan_file(target_path, min_entropy)
 
     for root, dirs, files in os.walk(target_path):
-        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
+        dirs[:] = [
+            d for d in dirs
+            if d not in IGNORE_DIRS
+            and not any(fragment in str(Path(root) / d) for fragment in excludes)
+        ]
         for fname in files:
             fp = Path(root) / fname
+            if any(fragment in str(fp) for fragment in excludes):
+                continue
             if fp.suffix.lower() in IGNORE_EXTENSIONS:
                 continue
             if fp.stat().st_size > max_file_size_kb * 1024:
