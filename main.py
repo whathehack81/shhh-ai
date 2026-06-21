@@ -113,11 +113,13 @@ def build_output_payload(
     display_findings: Iterable[Any],
     confirmed_count: int,
     fp_count: int,
-    ai_review_enabled: bool,
     min_entropy: float,
     max_file_size: int,
     redact: bool,
     excludes: List[str],
+    security_clue_count: int = 0,
+    detector_signal_count: int = 0,
+    ai_review_enabled: bool = False,
 ) -> Dict[str, Any]:
     findings_list = list(findings)
     display_list = list(display_findings)
@@ -130,6 +132,8 @@ def build_output_payload(
             "total_findings": len(findings_list),
             "displayed_findings": len(display_list),
             "confirmed_secrets": confirmed_count,
+            "security_clues": security_clue_count,
+            "detector_signals": detector_signal_count,
             "false_positives": fp_count,
             "ai_review_enabled": ai_review_enabled,
             "min_entropy": min_entropy,
@@ -277,10 +281,20 @@ def scan(
             f for f in findings_list if not (no_fp and ai_review and is_false_positive(f))
         ]
 
-        if ai_review and trusted_ai_gate:
-            confirmed_count = sum(1 for f in findings_list if not is_false_positive(f))
-        else:
-            confirmed_count = len(findings_list)
+        fp_count = sum(1 for f in findings_list if is_false_positive(f))
+        confirmed_count = sum(
+            1 for f in findings_list
+            if not is_false_positive(f)
+            and finding_attr(f, "classification", "secret_candidate") == "secret_candidate"
+        )
+        security_clue_count = sum(
+            1 for f in findings_list
+            if finding_attr(f, "classification", None) == "security_clue"
+        )
+        detector_signal_count = sum(
+            1 for f in findings_list
+            if finding_attr(f, "classification", None) == "detector_signal"
+        )
 
         payload = build_output_payload(
             target=target,
@@ -289,6 +303,8 @@ def scan(
             display_findings=display_findings,
             confirmed_count=confirmed_count,
             fp_count=fp_count,
+            security_clue_count=security_clue_count,
+            detector_signal_count=detector_signal_count,
             ai_review_enabled=ai_review,
             min_entropy=min_entropy,
             max_file_size=max_file_size,

@@ -9,12 +9,16 @@ import json
 import time
 from typing import Any, Optional
 
-from openai import OpenAI
+try:
+    from openai import OpenAI
+except ModuleNotFoundError:
+    OpenAI = None
 
 from .scanner import Finding
 
 
 _client: Optional[OpenAI] = None
+REDACTED_SECRET = "[REDACTED_SECRET]"
 
 
 SYSTEM_PROMPT = """You are an expert application security engineer specializing in secrets detection and credential security.
@@ -74,18 +78,30 @@ def finding_context_lines(finding: Any) -> list[str]:
     return [str(context)]
 
 
+def redact_outgoing_secret(value: str, secret_value: str) -> str:
+    """Remove candidate secret material before sending data to external AI APIs."""
+    if not secret_value:
+        return value
+
+    return value.replace(secret_value, REDACTED_SECRET)
+
+
 def build_review_item(finding: Any, index: int) -> dict[str, Any]:
     match_value = str(finding_attr(finding, "match", ""))
+    safe_context = [
+        redact_outgoing_secret(line, match_value)
+        for line in finding_context_lines(finding)
+    ]
 
     return {
         "index": index,
         "type": finding_attr(finding, "secret_type", "unknown"),
-        "match_preview": match_value[:80],
+        "match_preview": REDACTED_SECRET if match_value else "",
         "entropy": finding_attr(finding, "entropy", 0.0),
         "risk_score": finding_attr(finding, "risk_score", 0.0),
         "file": finding_attr(finding, "file", "unknown"),
         "line": finding_attr(finding, "line", "?"),
-        "context": "\n".join(finding_context_lines(finding)),
+        "context": "\n".join(safe_context),
     }
 
 
