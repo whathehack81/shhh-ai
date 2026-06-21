@@ -9,7 +9,10 @@ import json
 import time
 from typing import Any, Optional
 
-from openai import OpenAI
+try:
+    from openai import OpenAI
+except ModuleNotFoundError:
+    OpenAI = None
 
 from .scanner import Finding
 

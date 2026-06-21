@@ -67,6 +67,11 @@ class Finding:
     entropy: float
     pattern_confidence: float
     context_lines: list[str] = field(default_factory=list)
+    classification: str = "secret_candidate"
+    clue_type: Optional[str] = None
+    routes: list[str] = field(default_factory=list)
+    disposition: str = "unresolved"
+    context_clues: list[str] = field(default_factory=list)
     ai_verdict: Optional[str] = None
     ai_confidence: Optional[float] = None
     is_false_positive: bool = False
@@ -86,6 +91,11 @@ class Finding:
             "entropy": self.entropy,
             "pattern_confidence": self.pattern_confidence,
             "risk_score": self.risk_score,
+            "classification": self.classification,
+            "clue_type": self.clue_type,
+            "routes": self.routes,
+            "disposition": self.disposition,
+            "context_clues": self.context_clues,
             "ai_verdict": self.ai_verdict,
             "ai_confidence": self.ai_confidence,
             "is_false_positive": self.is_false_positive,
@@ -116,6 +126,69 @@ def extract_context(lines: list[str], line_num: int, window: int = 3) -> list[st
     return [f"{i+1}: {lines[i]}" for i in range(start, end)]
 
 
+
+
+def classify_finding(secret_type: str, file_path: Path, matched_value: str, context_lines: list[str]) -> dict:
+    """Classify matches as secrets, clues, or unresolved signals for analyst routing."""
+    path = str(file_path).lower()
+    current_line = ""
+    for line in context_lines:
+        if matched_value and matched_value in line:
+            current_line = line.lower()
+            break
+
+    ctx = current_line or "\n".join(context_lines).lower()
+    context_clues: list[str] = []
+
+    if any(part in path for part in ["docs/", "example", "sample"]):
+        context_clues.append("documentation_or_example")
+    if any(part in path for part in ["src/test/", "/test/", "fixtures", "mock"]):
+        context_clues.append("test_or_fixture_path")
+    if any(part in path for part in [".github/workflows", ".github/actions"]):
+        context_clues.append("github_actions_surface")
+    if any(part in path for part in ["key/", ".pem", ".p12", ".jks", "keystore", "truststore"]):
+        context_clues.append("crypto_material_path")
+    if any(word in ctx for word in ["postgres", "mysql", "mongodb", "redis", "jdbc", "datasource"]):
+        context_clues.append("database_surface")
+    if any(word in ctx for word in ["pull_request_target", "workflow_dispatch", "secrets.", "github_token"]):
+        context_clues.append("ci_trust_boundary_surface")
+
+    if secret_type == "Database URL":
+        return {
+            "classification": "security_clue",
+            "clue_type": "database_surface",
+            "routes": ["db_surface", "sqli_review", "auth_boundary"],
+            "disposition": "unresolved",
+            "context_clues": context_clues,
+        }
+
+    if secret_type == "Twilio Account SID":
+        return {
+            "classification": "detector_signal",
+            "clue_type": "possible_detector_issue",
+            "routes": ["detector_review"],
+            "disposition": "unresolved",
+            "context_clues": context_clues,
+        }
+
+    if secret_type in {"RSA Private Key", "JWT Token"}:
+        return {
+            "classification": "secret_candidate",
+            "clue_type": "crypto_or_auth_material",
+            "routes": ["crypto_review", "reuse_check", "fixture_exposure"],
+            "disposition": "unresolved",
+            "context_clues": context_clues,
+        }
+
+    return {
+        "classification": "secret_candidate",
+        "clue_type": None,
+        "routes": ["secret_validation"],
+        "disposition": "unresolved",
+        "context_clues": context_clues,
+    }
+
+
 def scan_file(file_path: Path, min_entropy: float = 3.5) -> list[Finding]:
     """Scan a single file for secrets using pattern matching + entropy."""
     findings = []
@@ -140,6 +213,8 @@ def scan_file(file_path: Path, min_entropy: float = 3.5) -> list[Finding]:
                 if secret_type == "Generic High-Entropy" and entropy < min_entropy:
                     continue
 
+                context_lines = extract_context(lines, line_num)
+                clue = classify_finding(secret_type, file_path, matched_value, context_lines)
                 finding = Finding(
                     file=str(file_path),
                     line=line_num,
@@ -148,7 +223,12 @@ def scan_file(file_path: Path, min_entropy: float = 3.5) -> list[Finding]:
                     match=matched_value,
                     entropy=round(entropy, 3),
                     pattern_confidence=confidence,
-                    context_lines=extract_context(lines, line_num),
+                    context_lines=context_lines,
+                    classification=clue["classification"],
+                    clue_type=clue["clue_type"],
+                    routes=clue["routes"],
+                    disposition=clue["disposition"],
+                    context_clues=clue["context_clues"],
                 )
                 findings.append(finding)
 
