@@ -1,1 +1,1 @@
-"""gitleaks-ai: AI-enhanced secrets scanner."""
+"""shhh-ai: AI-enhanced secrets scanner."""
