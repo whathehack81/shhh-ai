@@ -1,4 +1,4 @@
-# gitleaks-ai 🔐
+# shhh-ai 🔐
 
 > **AI-enhanced secrets scanner** with Shannon entropy analysis and LLM-powered false-positive elimination. A significant upgrade over pure regex-based scanners.
 
@@ -6,15 +6,15 @@
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4.1-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Security](https://img.shields.io/badge/Category-DevSecOps-red?style=flat-square)]()
-[![Stars](https://img.shields.io/github/stars/rawqubit/gitleaks-ai?style=flat-square)](https://github.com/rawqubit/gitleaks-ai/stargazers)
+[![Stars](https://img.shields.io/github/stars/whathehack81/shhh-ai?style=flat-square)](https://github.com/whathehack81/shhh-ai/stargazers)
 
 ---
 
 ## The Problem with Existing Scanners
 
-Tools like `gitleaks`, `truffleHog`, and `detect-secrets` suffer from a fundamental limitation: **they cannot reason about context**. A regex that matches `password=changeme123` will fire on every test fixture, documentation example, and placeholder in your codebase — generating alert fatigue that causes teams to disable scanning entirely.
+Tools like `gitleaks`, `truffleHog`, and `detect-secrets` suffer from a fundamental limitation: **they cannot reason about context**. A regex that matches `password=changeme123` will fire on every false positive unless a human reviews it.
 
-`gitleaks-ai` solves this with a **three-layer detection pipeline**:
+`shhh-ai` solves this with a **three-layer detection pipeline**:
 
 ```
 Input → [1. Pattern Matching] → [2. Entropy Analysis] → [3. AI Context Review] → Verdict
@@ -44,8 +44,8 @@ In benchmarks on real-world repositories, this pipeline reduces false positives 
 ## Installation
 
 ```bash
-git clone https://github.com/rawqubit/gitleaks-ai.git
-cd gitleaks-ai
+git clone https://github.com/whathehack81/shhh-ai.git
+cd shhh-ai
 pip install -r requirements.txt
 export OPENAI_API_KEY="sk-..."
 ```
@@ -79,7 +79,7 @@ python main.py scan . --min-entropy 4.5
 ## Architecture
 
 ```
-gitleaks-ai/
+shhh-ai/
 ├── main.py              # CLI entrypoint (Click)
 ├── src/
 │   ├── scanner.py       # Pattern matching + entropy analysis engine
@@ -136,9 +136,9 @@ File System
 repos:
   - repo: local
     hooks:
-      - id: gitleaks-ai
-        name: gitleaks-ai
-        entry: python /path/to/gitleaks-ai/main.py scan
+      - id: shhh-ai
+        name: shhh-ai
+        entry: python /path/to/shhh-ai/main.py scan
         language: system
         pass_filenames: false
 ```
@@ -147,8 +147,8 @@ repos:
 
 ## Comparison
 
-| Feature | gitleaks | truffleHog | detect-secrets | **gitleaks-ai** |
-|---------|----------|------------|----------------|-----------------|
+| Feature | gitleaks | truffleHog | detect-secrets | **shhh-ai** |
+|---------|----------|------------|----------------|-------------|
 | Regex patterns | ✓ | ✓ | ✓ | ✓ |
 | Entropy analysis | Partial | ✓ | ✓ | ✓ |
 | AI context review | ✗ | ✗ | ✗ | **✓** |
