@@ -1,5 +1,5 @@
 """
-gitleaks-ai: Core scanning engine.
+shhh-ai: Core scanning engine.
 Combines regex-based pattern matching, Shannon entropy analysis,
 and AI-powered context reasoning to detect secrets with near-zero false positives.
 """
@@ -124,7 +124,6 @@ def extract_context(lines: list[str], line_num: int, window: int = 3) -> list[st
     start = max(0, line_num - window - 1)
     end = min(len(lines), line_num + window)
     return [f"{i+1}: {lines[i]}" for i in range(start, end)]
-
 
 
 
