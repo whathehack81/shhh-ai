@@ -245,6 +245,31 @@ def scan(
         logger.info("Scan complete: %d potential secrets found", len(findings_list))
 
         if not findings_list:
+            payload = build_output_payload(
+                target=target,
+                scan_start=scan_start,
+                findings=[],
+                display_findings=[],
+                confirmed_count=0,
+                fp_count=0,
+                security_clue_count=0,
+                detector_signal_count=0,
+                ai_review_enabled=ai_review,
+                min_entropy=min_entropy,
+                max_file_size=max_file_size,
+                redact=redact,
+                excludes=excludes,
+            )
+
+            if findings:
+                findings_path = Path(findings)
+                findings_path.parent.mkdir(parents=True, exist_ok=True)
+                findings_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                console.print(f"[bold green]✓ Findings saved to {findings_path}[/bold green]")
+
+            if output == "json":
+                print(json.dumps(payload, indent=2))
+
             console.print("[bold green]✓ No secrets detected.[/bold green]")
             sys.exit(0)
 

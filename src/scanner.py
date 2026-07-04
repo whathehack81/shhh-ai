@@ -25,7 +25,7 @@ SECRET_PATTERNS = {
     "Slack Bot Token":          (r"xoxb-[0-9A-Za-z\-]{24,48}", 0.90),
     "Slack User Token":         (r"xoxp-[0-9A-Za-z\-]{24,48}", 0.90),
     "SendGrid API Key":         (r"SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}", 0.95),
-    "Twilio Account SID":       (r"AC[a-zA-Z0-9]{32}", 0.75),
+    "Twilio Account SID":       (r"(?<![A-Za-z0-9])AC[a-zA-Z0-9]{32}(?![A-Za-z0-9])", 0.75),
     "Twilio Auth Token":        (r"(?i)twilio[_\-\s]?auth[_\-\s]?token[\s]*[=:]\s*['\"]?([a-f0-9]{32})['\"]?", 0.80),
     "JWT Token":                (r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}", 0.80),
     "RSA Private Key":          (r"-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----", 0.99),
@@ -119,6 +119,15 @@ def is_likely_placeholder(value: str) -> bool:
     return any(indicator in lower for indicator in PLACEHOLDER_INDICATORS)
 
 
+def is_likely_code_symbol(value: str, line: str, match_end: int) -> bool:
+    """Reject identifiers/function calls captured as assigned secret values."""
+    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{12,}", value):
+        remainder = line[match_end:].lstrip()
+        if remainder.startswith("("):
+            return True
+    return False
+
+
 def extract_context(lines: list[str], line_num: int, window: int = 3) -> list[str]:
     """Extract surrounding lines for context."""
     start = max(0, line_num - window - 1)
@@ -202,8 +211,15 @@ def scan_file(file_path: Path, min_entropy: float = 3.5) -> list[Finding]:
             for match in re.finditer(pattern, line):
                 matched_value = match.group(1) if match.lastindex else match.group(0)
 
-                # Skip obvious placeholders
+                # Skip obvious placeholders and code symbols.
                 if is_likely_placeholder(matched_value):
+                    continue
+
+                if secret_type == "Generic High-Entropy" and is_likely_code_symbol(
+                    matched_value,
+                    line,
+                    match.end(1) if match.lastindex else match.end(),
+                ):
                     continue
 
                 entropy = shannon_entropy(matched_value)
