@@ -1,4 +1,4 @@
-# Contributing to gitleaks-ai
+# Contributing to shhh-ai
 
 Thank you for your interest in contributing!
 
@@ -13,8 +13,8 @@ Thank you for your interest in contributing!
 ## Development Setup
 
 ```bash
-git clone https://github.com/rawqubit/gitleaks-ai.git
-cd gitleaks-ai
+git clone https://github.com/whathehack81/shhh-ai.git
+cd shhh-ai
 pip install -r requirements.txt
 export OPENAI_API_KEY="your-key"
 ```
