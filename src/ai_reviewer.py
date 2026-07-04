@@ -1,5 +1,5 @@
 """
-gitleaks-ai: AI-powered false-positive elimination engine.
+shhh-ai: AI-powered false-positive elimination engine.
 
 This module lazy-loads the OpenAI client so normal non-AI scans do not require
 OPENAI_API_KEY at import time.
