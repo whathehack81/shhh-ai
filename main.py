@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gitleaks-ai: AI-assisted secrets scanner with entropy analysis,
+shhh-ai: AI-assisted secrets scanner with entropy analysis,
 redaction-by-default output, CI-safe exit behavior, and remediation reporting.
 
 Usage:
@@ -33,7 +33,7 @@ from src.ai_reviewer import review_findings_batch, generate_remediation_report
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - [%(levelname)s] - %(message)s",
-    handlers=[logging.StreamHandler(), logging.FileHandler("gitleaks-ai.log")],
+    handlers=[logging.StreamHandler(), logging.FileHandler("shhh-ai.log")],
 )
 
 logger = logging.getLogger(__name__)
@@ -146,11 +146,11 @@ def build_output_payload(
 
 
 @click.group()
-@click.version_option("1.0.3", prog_name="gitleaks-ai")
+@click.version_option("1.0.3", prog_name="shhh-ai")
 @click.option("--verbose", is_flag=True, default=False, help="Enable verbose logging.")
 @click.pass_context
 def cli(ctx, verbose):
-    """gitleaks-ai — AI-assisted secrets scanner with entropy analysis."""
+    """shhh-ai — AI-assisted secrets scanner with entropy analysis."""
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
         logger.debug("Verbose mode enabled")
@@ -210,7 +210,7 @@ def scan(
 
         console.print(
             Panel(
-                f"[bold cyan]gitleaks-ai[/bold cyan] scanning [bold]{target}[/bold]\n"
+                f"[bold cyan]shhh-ai[/bold cyan] scanning [bold]{target}[/bold]\n"
                 f"Entropy: {min_entropy} | AI review: {'enabled' if ai_review else 'disabled'} | "
                 f"Redaction: {'enabled' if redact else 'disabled'}",
                 expand=False,
@@ -328,7 +328,7 @@ def scan(
 
         if output == "markdown":
             lines = [
-                "# gitleaks-ai Scan Report\n\n",
+                "# shhh-ai Scan Report\n\n",
                 f"**Target:** `{target}`  \n",
                 f"**Scan Time:** {scan_start.strftime('%Y-%m-%d %H:%M:%S')}  \n",
                 f"**Scan Duration:** {payload['metadata']['scan_duration_seconds']}s  \n",
@@ -398,7 +398,7 @@ def scan(
                     remediation = generate_remediation_report(payload["findings"])
 
                 report_path.write_text(
-                    "# gitleaks-ai Remediation Report\n\n"
+                    "# shhh-ai Remediation Report\n\n"
                     f"**Target:** `{target}`  \n"
                     f"**Scan Time:** {scan_start.strftime('%Y-%m-%d %H:%M:%S')}  \n"
                     f"**Confirmed secrets:** {confirmed_count}  \n"
@@ -452,7 +452,7 @@ def remediate(findings_file, output):
 
         console.print(
             Panel(
-                f"[bold cyan]gitleaks-ai[/bold cyan] generating remediation report\n"
+                f"[bold cyan]shhh-ai[/bold cyan] generating remediation report\n"
                 f"Findings: {len(findings_list)} | Target: {metadata.get('target', 'unknown')}",
                 expand=False,
             )
@@ -464,7 +464,7 @@ def remediate(findings_file, output):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         output_path.write_text(
-            "# gitleaks-ai Remediation Report\n\n"
+            "# shhh-ai Remediation Report\n\n"
             f"**Target:** `{metadata.get('target', 'unknown')}`  \n"
             f"**Scan Time:** {metadata.get('timestamp', 'unknown')}  \n"
             f"**Confirmed Secrets:** {metadata.get('confirmed_secrets', len(findings_list))}  \n"
