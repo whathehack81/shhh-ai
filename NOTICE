@@ -1,0 +1,25 @@
+shhh-ai provenance notice
+=========================
+
+This project is derived from the MIT-licensed repository:
+
+    https://github.com/rawqubit/gitleaks-ai
+
+The original upstream copyright notice is preserved in LICENSE.
+
+Fork maintenance
+----------------
+
+The whathehack81/shhh-ai fork includes independent modifications such as
+redaction-by-default output, conservative AI-failure behavior, machine-readable
+findings artifacts, scanner refinements, and updated documentation and branding.
+
+No claim is made that all code in this repository was authored from scratch by
+the fork maintainer. Upstream authors retain credit for the original work.
+
+Benchmark note
+--------------
+
+This fork does not currently publish a reproducible benchmark dataset. Numerical
+performance claims should not be made until the dataset, methodology, baseline,
+and results are available for independent reproduction.
