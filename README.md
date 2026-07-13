@@ -119,6 +119,14 @@ shhh-ai/
 
 For high-assurance environments, keep AI verdicts advisory and require human confirmation before suppressing a finding.
 
+## Maintainer and intent
+
+This fork is maintained by **Rob (`whathehack81`)** as part of a broader validation-first security tooling effort.
+
+The goal is not to replace analyst judgment with an LLM. The goal is to make secret-candidate review safer, more structured, and easier to audit while keeping uncertain findings visible until a human can verify them.
+
+That same philosophy drives [`Casper`](https://github.com/whathehack81/Casper): preserve the evidence, state uncertainty honestly, and never suppress or escalate a finding beyond what the evidence supports.
+
 ## Contributing
 
 Contributions are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
