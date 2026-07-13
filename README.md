@@ -35,7 +35,7 @@ Input → Pattern matching → Entropy analysis → Optional AI context review �
 
 AI review is advisory. Failures leave findings unresolved rather than automatically marking them safe.
 
-## Security and privacy model
+## Data handling and review model
 
 - Finding values are redacted in normal output by default.
 - Candidate secret values are replaced before external AI review.
