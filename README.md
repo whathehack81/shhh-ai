@@ -1,45 +1,66 @@
 # shhh-ai 🔐
 
-> **AI-enhanced secrets scanner** with Shannon entropy analysis and LLM-powered false-positive elimination. A significant upgrade over pure regex-based scanners.
+> AI-assisted secret-candidate triage with pattern matching, entropy analysis, redaction-by-default output, and conservative LLM review.
 
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4.1-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4.1--mini-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Security](https://img.shields.io/badge/Category-DevSecOps-red?style=flat-square)]()
 [![Stars](https://img.shields.io/github/stars/whathehack81/shhh-ai?style=flat-square)](https://github.com/whathehack81/shhh-ai/stargazers)
 
----
+## Origin and attribution
 
-## The Problem with Existing Scanners
+`shhh-ai` is derived from the MIT-licensed [`rawqubit/gitleaks-ai`](https://github.com/rawqubit/gitleaks-ai) project.
 
-Tools like `gitleaks`, `truffleHog`, and `detect-secrets` suffer from a fundamental limitation: **they cannot reason about context**. A regex that matches `password=changeme123` will fire on every false positive unless a human reviews it.
+The original copyright notice remains in [`LICENSE`](LICENSE), as required by the MIT license. This fork is maintained by `whathehack81` and includes additional work such as:
 
-`shhh-ai` solves this with a **three-layer detection pipeline**:
+- Rebranding and CLI/documentation updates
+- Redaction-by-default output
+- Conservative AI-failure behavior that does not silently suppress findings
+- Explicit machine-readable findings artifacts
+- Safer external-AI review payloads with candidate values redacted
+- Additional false-positive handling and scanner refinements
 
+See [`NOTICE`](NOTICE) for the attribution record.
+
+## Detection pipeline
+
+```text
+Input → Pattern matching → Entropy analysis → Optional AI context review → Findings
 ```
-Input → [1. Pattern Matching] → [2. Entropy Analysis] → [3. AI Context Review] → Verdict
-```
 
-1. **Pattern Matching** — 20+ high-precision regex patterns for AWS keys, GitHub tokens, JWTs, database URLs, and more.
-2. **Shannon Entropy Analysis** — Filters out low-entropy strings that are statistically unlikely to be real secrets.
-3. **AI Context Review** — Sends candidate findings to an LLM with surrounding code context to eliminate false positives.
+1. **Pattern matching** identifies common credential and token formats.
+2. **Entropy analysis** helps prioritize random-looking candidate values.
+3. **Optional AI review** evaluates surrounding context while receiving a redacted candidate value.
 
-In benchmarks on real-world repositories, this pipeline reduces false positives by **~73%** compared to regex-only scanning while maintaining **>99% true positive recall**.
+AI review is advisory. Failures leave findings unresolved rather than automatically marking them safe.
 
----
+## Security and privacy model
+
+- Finding values are redacted in normal output by default.
+- Candidate secret values are replaced before external AI review.
+- Surrounding source context may still be sent to the configured AI provider.
+- Do not enable AI review for source code you are not permitted to share with that provider.
+- Do not treat an AI false-positive verdict as authoritative without human review.
+- Use `--trusted-ai-gate` only when you have explicitly accepted AI verdicts as part of your CI policy.
+
+## Benchmark status
+
+No independently reproducible benchmark dataset is currently published with this repository. Performance and false-positive reduction depend on the repository, detector patterns, entropy threshold, and model behavior.
+
+Earlier numerical benchmark claims have been removed until the dataset, methodology, and results can be published and reproduced.
 
 ## Features
 
-- **20+ secret patterns** covering all major cloud providers and services
-- **Shannon entropy scoring** per finding — quantify how "random" a secret looks
-- **AI false-positive elimination** — LLM reviews each finding with surrounding code context
-- **Risk scoring** — composite score combining entropy and pattern confidence
-- **CI/CD integration** — exits with code `1` when confirmed secrets are found
-- **Multiple output formats** — rich terminal tables, JSON (for `jq` pipelines), Markdown
-- **AI remediation reports** — actionable steps to rotate credentials and prevent recurrence
-- **Configurable thresholds** — tune entropy and confidence thresholds for your codebase
-
----
+- Common secret and credential patterns
+- Shannon entropy scoring
+- Optional batched AI context review
+- Composite risk scoring
+- Redaction-by-default output
+- JSON, Markdown, and terminal output
+- Machine-readable findings files
+- Static remediation guidance
+- Conservative CI behavior
 
 ## Installation
 
@@ -47,78 +68,45 @@ In benchmarks on real-world repositories, this pipeline reduces false positives 
 git clone https://github.com/whathehack81/shhh-ai.git
 cd shhh-ai
 pip install -r requirements.txt
-export OPENAI_API_KEY="sk-..."
 ```
 
----
+AI review additionally requires an OpenAI API key:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+```
 
 ## Usage
 
 ```bash
-# Scan current directory
+# Scan the current directory
 python main.py scan .
 
-# Scan with AI false-positive review
+# Save machine-readable findings
+python main.py scan . --output json --findings findings.json
+
+# Enable AI-assisted review
 python main.py scan /path/to/repo --ai-review
 
 # Generate a remediation report
 python main.py scan . --ai-review --report remediation.md
 
-# JSON output for pipeline integration
-python main.py scan src/ --output json | jq '.[] | select(.risk_score > 0.8)'
-
-# CI/CD usage (exits 1 if secrets found)
-python main.py scan . --ai-review --no-fp && echo "Clean"
-
-# Tune entropy threshold (higher = fewer false positives)
+# Tune the entropy threshold
 python main.py scan . --min-entropy 4.5
 ```
 
----
-
 ## Architecture
 
-```
+```text
 shhh-ai/
-├── main.py              # CLI entrypoint (Click)
+├── main.py              # Click CLI and output handling
 ├── src/
-│   ├── scanner.py       # Pattern matching + entropy analysis engine
-│   └── ai_reviewer.py   # LLM-based false-positive elimination
+│   ├── scanner.py       # Pattern matching and entropy analysis
+│   └── ai_reviewer.py   # Redacted, conservative AI review
 └── requirements.txt
 ```
 
-### Detection Pipeline
-
-```
-File System
-    │
-    ▼
-┌─────────────────────────────────────────────┐
-│  scanner.py                                 │
-│  ┌──────────────┐   ┌─────────────────────┐ │
-│  │ Regex Engine │──▶│ Entropy Filter      │ │
-│  │ (20+ patterns│   │ H(x) = -Σp·log₂(p) │ │
-│  └──────────────┘   └─────────────────────┘ │
-└─────────────────────────────────────────────┘
-    │
-    ▼ Candidate Findings
-┌─────────────────────────────────────────────┐
-│  ai_reviewer.py                             │
-│  ┌───────────────────────────────────────┐  │
-│  │ LLM Context Review (batched, 10/call) │  │
-│  │ Input: match + 3 lines context        │  │
-│  │ Output: true_positive | false_positive│  │
-│  └───────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-    │
-    ▼ Verified Findings + Risk Scores
-```
-
----
-
-## CI/CD Integration
-
-### GitHub Actions
+## CI example
 
 ```yaml
 - name: Scan for secrets
@@ -129,47 +117,20 @@ File System
     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 ```
 
-### Pre-commit Hook
-
-```yaml
-# .pre-commit-config.yaml
-repos:
-  - repo: local
-    hooks:
-      - id: shhh-ai
-        name: shhh-ai
-        entry: python /path/to/shhh-ai/main.py scan
-        language: system
-        pass_filenames: false
-```
-
----
-
-## Comparison
-
-| Feature | gitleaks | truffleHog | detect-secrets | **shhh-ai** |
-|---------|----------|------------|----------------|-------------|
-| Regex patterns | ✓ | ✓ | ✓ | ✓ |
-| Entropy analysis | Partial | ✓ | ✓ | ✓ |
-| AI context review | ✗ | ✗ | ✗ | **✓** |
-| False positive rate | High | Medium | Medium | **Low** |
-| Risk scoring | ✗ | ✗ | ✗ | **✓** |
-| Remediation reports | ✗ | ✗ | ✗ | **✓** |
-| JSON output | ✓ | ✓ | ✓ | ✓ |
-
----
+For high-assurance environments, keep AI verdicts advisory and require human confirmation before suppressing a finding.
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-Areas of particular interest:
-- Additional secret patterns for new services
-- Benchmark datasets for false-positive evaluation
-- Integration with HashiCorp Vault and AWS Secrets Manager for remediation automation
+Useful contribution areas include:
 
----
+- Reproducible benchmark datasets
+- Additional service-specific patterns
+- False-positive regression fixtures
+- Provider-neutral AI review adapters
+- Secret-manager integration
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License. The original upstream copyright notice is preserved in [`LICENSE`](LICENSE). See [`NOTICE`](NOTICE) for provenance and fork attribution.
